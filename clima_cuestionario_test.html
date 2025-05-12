@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="gl">
+<head>
+  <meta charset="UTF-8" />
+  <title>Cuestionario PCAP</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #eef2f7;
+      color: #333;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .slide {
+      display: none;
+      max-width: 600px;
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 10px;
+      padding: 30px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      animation: fadeIn 0.5s ease-in;
+    }
+
+    .active {
+      display: block;
+    }
+
+    h1, h2 {
+      color: #2b2b2b;
+    }
+
+    .question {
+      font-size: 18px;
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+
+    .answers button {
+      display: block;
+      margin: 10px auto;
+      padding: 12px 20px;
+      width: 90%;
+      font-size: 16px;
+      border: none;
+      border-radius: 6px;
+      background-color: #4a90e2;
+      color: white;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .answers button:hover {
+      background-color: #357ab8;
+    }
+
+    .answers button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+
+    .feedback {
+      margin-top: 15px;
+      font-weight: bold;
+    }
+
+    .correct {
+      color: green;
+    }
+
+    .incorrect {
+      color: red;
+    }
+
+    .nav-buttons {
+      margin-top: 20px;
+    }
+
+    .nav-buttons button {
+      margin: 0 10px;
+      padding: 10px 18px;
+      border: none;
+      border-radius: 6px;
+      background-color: #6c757d;
+      color: white;
+      cursor: pointer;
+    }
+
+    .nav-buttons button:hover {
+      background-color: #5a6268;
+    }
+
+    .timer {
+      font-size: 1em;
+      margin-bottom: 10px;
+      color: #444;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    code {
+      background-color: #f4f4f4;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      color: #c7254e;
+      font-size: 15px;
+    }
+
+    pre {
+      background-color: #f9f9f9;
+      padding: 10px;
+      border-left: 4px solid #4a90e2;
+      overflow-x: auto;
+      font-family: 'Courier New', monospace;
+      font-size: 15px;
+      color: #333;
+      border-radius: 6px;
+      margin: 15px 0;
+      text-align: left;
+    }
+
+    .answers button.selected {
+      background-color: #ffc107 !important;
+      color: #000;
+      border: 2px solid #ffa000;
+    }
+
+
+  </style>
+</head>
+<body>
+
+  <!-- Slide de inicio -->
+  <div class="slide active" id="start-slide">
+    <h1>Cuestionario “CLIMA UD3”</h1>
+    <p>Este cuestionario avaliará os teus coñecementos sobre CLIMA UD 3 ECOSISTEMA</p>
+    <p><em>Pulsa para comezar</em></p>
+    <button onclick="startQuiz()">Iniciar</button>
+  </div>
+
+  <!-- Slide de preguntas -->
+  <div class="slide" id="quiz-slide">
+    <div class="timer" id="timer">Tempo restante: 25s</div>
+    <div id="question-counter"></div>
+    <div class="question" id="question-text"></div>
+    <div class="answers" id="answers-container"></div>
+    <div class="feedback" id="feedback"></div>
+    <div class="nav-buttons">
+      <button onclick="prevQuestion()">Anterior</button>
+      <button onclick="nextQuestion()">Seguinte</button>
+    </div>
+  </div>
+
+  <!-- Slide final -->
+  <div class="slide" id="end-slide">
+    <h2>Remataches o cuestionario!</h2>
+    <p>Grazas por participar.</p>
+    <button onclick="restartQuiz()">Reiniciar cuestionario</button>
+  </div>
+
+  <script>
+    let correctCount = 0;
+    let incorrectCount = 0;
+    let currentQuestion = 0;
+    let timer;
+    let timeLeft = 25;
+
+
+    const questions = [       
+    {
+          question: "En que zona está situada España segundo o texto?",
+          answers: ["Zona polar", "Zona tropical", "Zona temperada", "Zona ecuatorial"],
+          correct: 2,
+          explanation: "✅ España está situada na zona temperada."
+      },
+      {
+          question: "Cantos tipos de clima hai en España e cales son?",
+          answers: ["Tres: oceánico, mediterráneo e de montaña", "Cinco: oceánico, continental, mediterráneo, seco e de montaña", "Seis: oceánico, continental, mediterráneo, semidesértico ou seco, de montaña e subtropical", "Catro: oceánico, mediterráneo, tropical e seco"],
+          correct: 2,
+          explanation: "✅ En España hai seis tipos de clima: oceánico, continental, mediterráneo, semidesértico ou seco, de montaña e subtropical."
+      },
+      {
+          question: "Como son as temperaturas no clima oceánico?",
+          answers: ["Extremas todo o ano", "Moi frías no inverno", "Suaves, con veráns frescos e invernos temperados", "Calurosas no verán e suaves no inverno"],
+          correct: 2,
+          explanation: "✅ As temperaturas no clima oceánico son suaves, con veráns frescos e invernos temperados."
+      },
+      {
+          question: "Como son as precipitacións no clima mediterráneo?",
+          answers: ["Abundantes todo o ano", "Constantes e moderadas", "Escasas", "So chove no inverno"],
+          correct: 2,
+          explanation: "✅ As precipitacións no clima mediterráneo son escasas."
+      },
+      {
+          question: "Que zonas corresponden ao clima continental?",
+          answers: ["Costa norte", "Litoral mediterráneo", "Illas Baleares", "Interior da Península"],
+          correct: 3,
+          explanation: "✅ O clima continental atópase no interior da Península."
+      },
+      {
+          question: "Que tipo de vexetación se atopa no clima de alta montaña?",
+          answers: ["Cereais e videiras", "Palmeiras e matogueiras", "Varia segundo a altitude: aciñeiras, carballos, piñeiros, abetos, prados e arbustos", "Só prados"],
+          correct: 2,
+          explanation: "✅ No clima de alta montaña a vexetación varía coa altitude: aciñeiras e carballos nas zonas baixas, piñeiros e abetos nas zonas medias, prados e arbustos nas zonas altas."
+      },
+      {
+          question: "Que tipo de clima ten a zona das Illas Canarias?",
+          answers: ["Mediterráneo", "Oceánico", "Subtropical", "Continental"],
+          correct: 2,
+          explanation: "✅ A zona das Illas Canarias ten un clima subtropical."
+      },
+      {
+          question: "Que tipo de vexetación é exclusiva das Illas Canarias?",
+          answers: ["Carballos e piñeiros europeos", "Endémica: palmeira, piñeiro canario", "Aciñeiras e oliveiras", "Matogueiras baixas"],
+          correct: 1,
+          explanation: "✅ A vexetación exclusiva das Illas Canarias é endémica, como a palmeira e o piñeiro canario."
+      },
+      {
+          question: "Que tipo de clima predomina nas zonas desérticas de España?",
+          answers: ["Clima oceánico", "Clima de montaña", "Clima semidesértico ou seco", "Clima subtropical"],
+          correct: 2,
+          explanation: "✅ Nas zonas desérticas de España predomina o clima semidesértico ou seco, con temperaturas elevadas e precipitacións escasas."
+      },
+      {
+          question: "Como afecta o relevo ao clima de España?",
+          answers: ["Non afecta ao clima", "Inflúe só nas precipitacións", "Determina a duración do día", "Inflúe na distribución das precipitacións e temperaturas, creando microclimas"],
+          correct: 3,
+          explanation: "✅ O relevo inflúe na distribución das precipitacións e temperaturas, creando microclimas nas distintas zonas."
+      },
+      {
+          question: "Que vexetación é característica do clima mediterráneo?",
+          answers: ["Cactos e pradeiras", "Piñeiros do norte", "Aciñeiras, alcornoques, piñeiros, oliveiras e matogueiras", "Abetos e fentos"],
+          correct: 2,
+          explanation: "✅ A vexetación do clima mediterráneo inclúe aciñeiras, alcornoques, piñeiros, oliveiras e matogueiras."
+      },
+      {
+          question: "Que diferenza hai entre o clima oceánico e o clima mediterráneo?",
+          answers: ["O oceánico é máis cálido", "O mediterráneo é máis húmido", "O oceánico ten temperaturas suaves e precipitacións abundantes, mentres o mediterráneo presenta temperaturas máis extremas e precipitacións escasas e irregulares", "Non hai diferenza"],
+          correct: 2,
+          explanation: "✅ O clima oceánico ten temperaturas suaves e precipitacións abundantes todo o ano, mentres que o mediterráneo ten temperaturas máis extremas e precipitacións escasas e irregulares."
+      },
+      {
+          question: "Como se manifesta a influencia do clima subtropical nas Illas Canarias?",
+          answers: ["Con invernos moi fríos", "Con choivas intensas no verán", "Con temperaturas suaves todo o ano, escasas precipitacións e vexetación endémica adaptada á aridez", "Con moita neve nas zonas baixas"],
+          correct: 2,
+          explanation: "✅ Nas Illas Canarias, o clima subtropical maniféstase con temperaturas suaves todo o ano, escasas precipitacións e vexetación endémica adaptada á aridez."
+      },
+      {
+          question: "Que factores climáticos favorecen a diversidade biolóxica en España?",
+          answers: ["Só as precipitacións", "A variedade de climas e o relevo diverso", "A falta de montañas", "O mar Mediterráneo"],
+          correct: 1,
+          explanation: "✅ A variedade de climas e o relevo diverso favorecen a diversidade biolóxica en España."
+      },
+      {
+          question: "Cal é a principal causa das variacións de temperatura no clima continental?",
+          answers: ["A proximidade ao mar", "A altitude", "A influencia oceánica", "A falta de influencia do mar, provocando veráns cálidos e invernos fríos"],
+          correct: 3,
+          explanation: "✅ A principal causa das variacións de temperatura no clima continental é a falta de influencia do mar."
+      },
+      {
+            question: "Que factores inflúen na paisaxe?",
+            answers: ["Só o relevo", "O relevo, a flora, a fauna, o clima e a acción humana", "A actividade económica", "O nivel do mar"],
+            correct: 1,
+            explanation: "✅ Os factores que inflúen na paisaxe son o relevo, a flora, a fauna, o clima e a acción humana."
+        },
+        {
+            question: "Que é unha paisaxe natural?",
+            answers: ["Unha cidade antiga", "Un espazo forestal humanizado", "É un espazo xeográfico no que o ser humano non interveu", "Unha zona costeira con industria"],
+            correct: 2,
+            explanation: "✅ Unha paisaxe natural é un espazo xeográfico no que o ser humano non interveu."
+        },
+        {
+            question: "Que é unha paisaxe humanizada?",
+            answers: ["Unha paisaxe virxe", "Unha zona desértica", "Unha paisaxe natural transformada polos homes", "Unha rexión montañosa"],
+            correct: 2,
+            explanation: "✅ Unha paisaxe humanizada é unha paisaxe natural transformada polos homes."
+        },
+        {
+            question: "Que tipos de paisaxe existen en función da proximidade ao mar?",
+            answers: ["Paisaxes rurais e urbanas", "Paisaxes naturais e artificiais", "Paisaxes de interior e paisaxes de costa", "Paisaxes industriais e agrícolas"],
+            correct: 2,
+            explanation: "✅ En función da proximidade ao mar, existen paisaxes de interior e paisaxes de costa."
+        },
+        {
+            question: "Onde se localizan as principais vías de comunicación e cidades na paisaxe oceánica?",
+            answers: ["No interior", "Nas zonas montañosas", "Na franxa costeira", "No sur da península"],
+            correct: 2,
+            explanation: "✅ Na paisaxe oceánica, as principais vías de comunicación e cidades localízanse na franxa costeira."
+        },
+        {
+            question: "A que se dedican os habitantes da zona costeira na paisaxe oceánica?",
+            answers: ["Agricultura e gandaría", "Pesca e minería", "Industria, servizos e turismo", "Comercio marítimo tradicional"],
+            correct: 2,
+            explanation: "✅ Na paisaxe oceánica, os habitantes da zona costeira dedícanse á industria, aos servizos e ao turismo."
+        },
+        {
+            question: "Como se distribúe a poboación no mundo rural da paisaxe oceánica?",
+            answers: ["En cidades dispersas", "En grandes urbes", "En casas de campo e pequenas aldeas", "En centros industriais"],
+            correct: 2,
+            explanation: "✅ No mundo rural da paisaxe oceánica, a poboación distribúese en casas de campo e pequenas aldeas."
+        },
+        {
+            question: "Como son as comunicacións na paisaxe mediterránea?",
+            answers: ["Escasas", "Difíciles polo relevo", "Boas e modernas", "Só marítimas"],
+            correct: 2,
+            explanation: "✅ Na paisaxe mediterránea, as comunicacións son boas e modernas."
+        },
+        {
+            question: "Cal é a actividade económica máis importante na paisaxe mediterránea?",
+            answers: ["Agricultura de secano", "Industria pesada", "O turismo", "Pesca tradicional"],
+            correct: 2,
+            explanation: "✅ A actividade económica máis importante na paisaxe mediterránea é o turismo."
+        },
+        {
+            question: "Que ocorre coas paisaxes naturais na paisaxe mediterránea?",
+            answers: ["Están intactas", "Medran co turismo", "Están en decadencia debido á expansión do ser humano", "Son substituídas por zonas industriais"],
+            correct: 2,
+            explanation: "✅ As paisaxes naturais na paisaxe mediterránea están en decadencia debido á expansión do ser humano."
+        },
+        {
+            question: "Que característica teñen as zonas rurais mediterráneas?",
+            answers: ["Carecen de regadío", "Están abandonadas", "Contan con grandes zonas de regadío", "Son zonas montañosas e frías"],
+            correct: 2,
+            explanation: "✅ As zonas rurais mediterráneas caracterízanse por contar con grandes zonas de regadío."
+        },
+        {
+            question: "Como son as cidades na paisaxe continental?",
+            answers: ["Moi poboadas en toda a zona", "Pouco poboadas, agás Madrid", "Abandonadas", "Situadas na costa"],
+            correct: 1,
+            explanation: "✅ Na paisaxe continental, as cidades son pouco poboadas, agás Madrid."
+        },
+        {
+            question: "Como son as comunicacións na paisaxe continental?",
+            answers: ["Escasas", "Boas", "Só ferroviarias", "Antigas e pouco eficaces"],
+            correct: 1,
+            explanation: "✅ As comunicacións na paisaxe continental son boas."
+        },
+        {
+            question: "A que se dedican as actividades económicas na paisaxe continental?",
+            answers: ["Agricultura de montaña", "Pesca e turismo", "Á industria e ao sector servizos", "Silvicultura e artesanía"],
+            correct: 2,
+            explanation: "✅ Na paisaxe continental, as actividades económicas principais son a industria e o sector servizos."
+        },
+        {
+            question: "Onde se concentran as poboacións no mundo rural na paisaxe continental?",
+            answers: ["En grandes cidades", "En aldeas dispersas", "En vilas pequenas ou medianas", "Nas zonas costeiras"],
+            correct: 2,
+            explanation: "✅ No mundo rural da paisaxe continental, a poboación concéntrase en vilas pequenas ou medianas."
+        },
+        {
+            question: "Como son as zonas de montaña na paisaxe de alta montaña?",
+            answers: ["Moi poboadas con grandes cidades", "Pouco poboadas debido ao relevo abrupto e inhóspito", "Abundantes en industrias", "Ideais para o cultivo intensivo"],
+            correct: 1,
+            explanation: "✅ As zonas de montaña na paisaxe de alta montaña son pouco poboadas debido ao relevo abrupto e inhóspito."
+        },
+        {
+          question: "Que tipo de clima predomina en Galicia?",
+          answers: ["Clima continental seco", "Clima subtropical", "Clima oceánico húmido", "Clima mediterráneo"],
+          correct: 2,
+          explanation: "✅ En Galicia predomina o clima oceánico húmido."
+      },
+      {
+          question: "Como son as temperaturas en Galicia ao longo do ano?",
+          answers: ["Extremas e moi frías no inverno", "Moi altas todo o ano", "Suaves, con invernos frescos e veráns moderadamente cálidos", "Moi frías en verán e cálidas en inverno"],
+          correct: 2,
+          explanation: "✅ En Galicia, as temperaturas son suaves durante o ano, con invernos frescos e veráns moderadamente cálidos."
+      },
+      {
+          question: "Que influencia ten o mar no clima galego?",
+          answers: ["Aumenta as temperaturas extremas", "Reduce as precipitacións", "Regula as temperaturas, evitando extremos de frío ou calor", "Non ten ningunha influencia"],
+          correct: 2,
+          explanation: "✅ O mar regula as temperaturas en Galicia, evitando extremos de frío ou calor."
+      },
+      {
+          question: "Como son as precipitacións en Galicia?",
+          answers: ["Moi escasas todo o ano", "So chove en verán", "Abundantes durante todo o ano, especialmente no outono e inverno", "Apenas existen chuvias"],
+          correct: 2,
+          explanation: "✅ En Galicia as precipitacións son abundantes todo o ano, especialmente no outono e inverno."
+      },
+      {
+          question: "Que zona de Galicia recibe máis precipitacións?",
+          answers: ["O interior de Lugo", "O sueste de Ourense", "A fachada atlántica, sobre todo as provincias da Coruña e Pontevedra", "A Mariña lucense"],
+          correct: 2,
+          explanation: "✅ A fachada atlántica, especialmente A Coruña e Pontevedra, recibe máis precipitacións en Galicia."
+      },
+      {
+          question: "Que elementos inflúen no clima galego ademais do mar?",
+          answers: ["Só a latitude", "A acción humana", "O relevo e os ventos atlánticos", "O deserto do Sáhara"],
+          correct: 2,
+          explanation: "✅ O relevo e os ventos atlánticos tamén inflúen no clima galego."
+      },
+      {
+          question: "Como varía o clima entre o interior e a costa galega?",
+          answers: ["Non varía", "O interior ten temperaturas máis extremas e menor influencia marítima", "A costa é máis seca", "O interior é máis húmido"],
+          correct: 1,
+          explanation: "✅ O clima do interior de Galicia presenta temperaturas máis extremas e menos influencia marítima que a costa."
+      },
+      {
+          question: "En que estación do ano hai máis precipitacións en Galicia?",
+          answers: ["Primavera", "Verán", "Outono e inverno", "Verán e primavera"],
+          correct: 2,
+          explanation: "✅ As estacións con máis precipitacións en Galicia son o outono e o inverno."
+      },
+      {
+          question: "Que tipo de vexetación é característica do clima galego?",
+          answers: ["Cactos e matogueiras secas", "Bosques de carballos, castiñeiros e piñeiros, así como praderías húmidas", "Palmeiras e oliveiras", "Só arbustos baixos"],
+          correct: 1,
+          explanation: "✅ O clima galego favorece bosques de carballos, castiñeiros, piñeiros e praderías húmidas."
+      },
+      {
+          question: "Que papel teñen os ventos no clima de Galicia?",
+          answers: ["Secan a atmosfera", "Non afectan ao clima", "Traen humidade e chuvia dende o océano Atlántico", "Producen calor intensa"],
+          correct: 2,
+          explanation: "✅ Os ventos atlánticos traen humidade e chuvia a Galicia."
+      },
+      {
+          question: "Que zonas de Galicia teñen temperaturas máis extremas?",
+          answers: ["A costa", "A Mariña", "As zonas do interior", "As rías baixas"],
+          correct: 2,
+          explanation: "✅ As zonas do interior de Galicia teñen temperaturas máis extremas ca a costa."
+      },
+      {
+          question: "Como inflúe o relevo no clima galego?",
+          answers: ["Non inflúe", "Reduce as temperaturas costeiras", "Condiciona as precipitacións e as temperaturas, creando microclimas", "Fai que sempre neve nas montañas"],
+          correct: 2,
+          explanation: "✅ O relevo condiciona as precipitacións e as temperaturas, creando microclimas en Galicia."
+      },
+      {
+          question: "Que fenómenos meteorolóxicos son frecuentes en Galicia?",
+          answers: ["Secas prolongadas", "Nevadas constantes", "Neboas, chuvascos intensos, ventos fortes e ocasionalmente cicloxénese explosiva", "Tornados"],
+          correct: 2,
+          explanation: "✅ En Galicia son frecuentes as neboas, os chuvascos intensos, os ventos fortes e ás veces a cicloxénese explosiva."
+      },
+      {
+          question: "Como afecta o cambio climático ao clima de Galicia?",
+          answers: ["Provoca máis neve", "Non afecta", "Aumenta as temperaturas e fai as precipitacións máis irregulares", "Fai desaparecer os ventos"],
+          correct: 2,
+          explanation: "✅ O cambio climático está provocando un aumento das temperaturas e unha maior irregularidade nas precipitacións en Galicia."
+      },
+      {
+          question: "Que tipo de vento predomina en Galicia?",
+          answers: ["Ventos secos do sur", "Ventos do leste", "Ventos atlánticos húmidos", "Ventos continentais fríos"],
+          correct: 2,
+          explanation: "✅ Os ventos predominantes en Galicia son os ventos atlánticos húmidos, que traen precipitacións frecuentes."
+      },
+      {
+          question: "Que zonas de Galicia reciben menos precipitacións?",
+          answers: ["A Mariña lucense", "O sueste de Ourense", "A costa da Coruña", "As Rías Altas"],
+          correct: 1,
+          explanation: "✅ O sueste de Ourense é unha das zonas máis secas de Galicia."
+      },
+      {
+          question: "Como inflúe o clima na economía galega?",
+          answers: ["Non inflúe en absoluto", "Fomenta a minería", "Favorece actividades como a agricultura, a gandería e a pesca, pero tamén pode afectar negativamente con temporais e secas", "Só afecta ao turismo"],
+          correct: 2,
+          explanation: "✅ O clima galego favorece a agricultura, a gandería e a pesca, pero tamén pode causar danos con temporais e secas."
+      },
+      {
+          question: "Que diferenza hai entre o clima da costa e o do interior de Galicia?",
+          answers: ["Ningunha", "O interior é máis húmido", "A costa ten temperaturas máis suaves e maior humidade, mentres que o interior experimenta máis variacións térmicas", "A costa é máis seca ca o interior"],
+          correct: 2,
+          explanation: "✅ A costa galega ten temperaturas máis suaves e máis humidade; o interior ten máis variacións térmicas."
+      }, 
+      {
+          question: "Que son as chairas?",
+          answers: ["Montañas baixas", "Extensións pequenas e montañosas", "Extensións de terreo moi grandes case planas cunha altitude non superior aos 200 metros sobre o nivel do mar", "Vales profundos"],
+          correct: 2,
+          explanation: "✅ As chairas son extensións de terreo moi grandes e case planas cunha altitude inferior a 200 metros."
+      },
+      {
+          question: "Que son as mesetas?",
+          answers: ["Montañas altas e afiadas", "Planicies a nivel do mar", "Chairas ou planicies elevadas de maneira natural a máis de 200 metros de altitude", "Cadeas montañosas en forma de val"],
+          correct: 2,
+          explanation: "✅ As mesetas son chairas elevadas a máis de 200 metros sobre o nivel do mar."
+      },
+      {
+          question: "Que son as depresións?",
+          answers: ["Montes erosionados", "Vales secos e profundos", "Áreas húmidas polas que descorren ríos, formando vales", "Planicies elevadas e secas"],
+          correct: 2,
+          explanation: "✅ As depresións son áreas húmidas por onde pasan ríos, formando vales alongados."
+      },
+      {
+          question: "Que é unha albufeira?",
+          answers: ["Unha illa costeira", "Unha baía pechada", "Unha lagoa de auga lixeiramente salgada, pouco profunda, próxima ao mar e separada del por terra areosa", "Un río seco e estacional"],
+          correct: 2,
+          explanation: "✅ Unha albufeira é unha lagoa lixeiramente salgada, pouco profunda e separada do mar por terra areosa."
+      },
+      {
+          question: "Que é un arquipélago?",
+          answers: ["Unha ría grande", "Unha baía con illas", "Un conxunto de illas", "Un golfo entre dúas illas"],
+          correct: 2,
+          explanation: "✅ Un arquipélago é un conxunto de illas."
+      },
+      {
+          question: "Que é unha baía?",
+          answers: ["Unha illa pequena", "Unha entrada do mar na costa, similar a un golfo pero máis pequena", "Unha zona de pesca costeira", "Un istmo con forma de U"],
+          correct: 1,
+          explanation: "✅ Unha baía é unha entrada do mar na costa, parecida a un golfo pero de menor tamaño."
+      },
+      {
+          question: "Que é un cabo?",
+          answers: ["Unha illa baixa", "Unha praia de area fina", "A parte saínte da terra que penetra no mar", "Unha montaña interior"],
+          correct: 2,
+          explanation: "✅ Un cabo é a parte da terra que sobresae no mar."
+      },
+      {
+          question: "Que é un cantil ou acantilado?",
+          answers: ["Unha illa escarpada", "Unha ría seca", "Un terreo abrupto en forte pendente", "Un val profundo e ancho"],
+          correct: 2,
+          explanation: "✅ Un cantil é un terreo abrupto e con forte pendente, típico das costas rochosas."
+      },
+      {
+          question: "Que é un golfo?",
+          answers: ["Unha illa de gran tamaño", "Unha lagoa pechada", "Unha gran porción de mar que entra na terra entre dous cabos", "Unha ría estreita"],
+          correct: 2,
+          explanation: "✅ Un golfo é unha gran porción de mar que entra na terra entre dous cabos."
+      },
+      {
+          question: "Que é unha illa?",
+          answers: ["Unha montaña no mar", "Unha porción de terra rodeada de auga por un lado", "Unha porción de terra rodeada de auga por todos os lados", "Unha península pequena"],
+          correct: 2,
+          explanation: "✅ Unha illa é unha porción de terra rodeada completamente por auga."
+      },
+      {
+          question: "Que é un istmo?",
+          answers: ["Unha entrada de mar na terra", "Unha ría estreita", "Unha franxa estreita de terra que une dúas zonas terrestres", "Unha illa unida á costa"],
+          correct: 2,
+          explanation: "✅ Un istmo é unha franxa estreita de terra que conecta dúas zonas terrestres."
+      },
+      {
+          question: "Que é unha marisma?",
+          answers: ["Unha praia con vexetación", "Terra baixa inundada polo mar", "Unha lagoa de auga doce", "Un río de curso lento"],
+          correct: 1,
+          explanation: "✅ Unha marisma é unha terra baixa que se inunda coas mareas."
+      },
+      {
+          question: "Que é unha península?",
+          answers: ["Unha illa con pontes", "Unha entrada de mar", "Unha porción de terra rodeada de auga por todas as partes menos por unha", "Un golfo elevado"],
+          correct: 2,
+          explanation: "✅ Unha península está case completamente rodeada por auga, agás por unha parte chamada istmo."
+      },
+      {
+          question: "Que son as praias?",
+          answers: ["Montañas costeiras", "Cadeas rochosas submarinas", "Extensións de area ou pedra miúda á beira do mar ou dun río", "Camiños marítimos de navegación"],
+          correct: 2,
+          explanation: "✅ As praias son áreas de area ou pedras pequenas situadas á beira do mar ou dos ríos."
+      },
+      {
+          question: "Que é unha ría?",
+          answers: ["Un río seco", "Un brazo de mar entre illas", "Unha zona húmida costeira", "Cando o mar se interna na desembocadura dun río"],
+          correct: 3,
+          explanation: "✅ Unha ría fórmase cando o mar entra pola desembocadura dun río."
+      },
+      {
+          question: "En que mares ou océanos desembocan os ríos de España?",
+          answers: ["Só no mar Cantábrico", "No océano Índico", "Na vertente atlántica, cantábrica e mediterránea", "Só no océano Atlántico"],
+          correct: 2,
+          explanation: "✅ Os ríos de España desembocan en tres vertentes: atlántica, cantábrica e mediterránea."
+      },
+      {
+          question: "Que é unha vertente hidrográfica?",
+          answers: ["Un tipo de montaña", "O conxunto de lagos dunha rexión", "É o conxunto de ríos que desembocan nun mesmo mar ou océano", "Unha zona de regadío"],
+          correct: 2,
+          explanation: "✅ Unha vertente hidrográfica é o conxunto de ríos que desembocan nun mesmo mar ou océano."
+      },
+      {
+          question: "Cales son as tres vertentes hidrográficas de España?",
+          answers: ["Atlántica, Pacífica e Cantábrica", "Mediterránea, Alpina e Subterránea", "Atlántica, Mediterránea e Cantábrica", "Interior, Externa e Costeira"],
+          correct: 2,
+          explanation: "✅ As tres vertentes hidrográficas de España son a atlántica, a mediterránea e a cantábrica."
+      },
+      {
+          question: "Que características ten a vertente atlántica?",
+          answers: ["Ríos curtos e secos", "Ríos longos, con caudal abundante e irregular", "Ríos con moitas illas", "Ríos que só aparecen no verán"],
+          correct: 1,
+          explanation: "✅ Os ríos da vertente atlántica son longos, con caudal abundante e irregular."
+      },
+      {
+          question: "Que ríos pertencen á vertente atlántica?",
+          answers: ["Ebro, Turia, Segura", "Miño, Douro, Texo, Guadiana e Guadalquivir", "Nalón, Sella, Nervión", "Sil, Xúcar, Bidasoa"],
+          correct: 1,
+          explanation: "✅ O Miño, o Douro, o Texo, o Guadiana e o Guadalquivir pertencen á vertente atlántica."
+      },
+      {
+          question: "Como son os ríos da vertente cantábrica?",
+          answers: ["Longos e de caudal moi irregular", "Curvos e secos", "Curtos, de forte pendente e caudal regular e abundante", "Pouco profundos e secos"],
+          correct: 2,
+          explanation: "✅ Os ríos da vertente cantábrica son curtos, con forte pendente e caudal abundante e regular."
+      },
+      {
+          question: "Que ríos pertencen á vertente cantábrica?",
+          answers: ["Texo, Segura, Douro", "Nalón, Nervión, Bidasoa e Sella", "Miño, Ebro, Turia", "Guadalquivir, Guadiana, Xúcar"],
+          correct: 1,
+          explanation: "✅ Nalón, Nervión, Bidasoa e Sella son ríos da vertente cantábrica."
+      },
+      {
+          question: "Que características ten a vertente mediterránea?",
+          answers: ["Ríos moi longos e caudalosos", "Ríos secos durante todo o ano", "Ríos curtos e de caudal irregular, con períodos de seca e cheas", "Ríos con moitas ramificacións"],
+          correct: 2,
+          explanation: "✅ Os ríos da vertente mediterránea son curtos e teñen un caudal irregular, con secas e cheas frecuentes."
+      },
+      {
+          question: "Que ríos pertencen á vertente mediterránea?",
+          answers: ["Xúcar, Segura, Turia e Ebro", "Douro, Texo, Miño e Guadalquivir", "Nalón, Nervión, Miño e Bidasoa", "Sil, Guadiana, Turia e Nalón"],
+          correct: 0,
+          explanation: "✅ O Ebro, o Xúcar, o Segura e o Turia pertencen á vertente mediterránea."
+      },
+      {
+          question: "Por que os ríos da vertente mediterránea teñen caudal irregular?",
+          answers: ["Pola acción humana", "Debido ao clima seco e ás precipitacións irregulares", "Pola súa proximidade ao mar", "Porque están en zonas montañosas"],
+          correct: 1,
+          explanation: "✅ O caudal dos ríos mediterráneos é irregular debido ao clima seco e ás precipitacións irregulares."
+      },
+      {
+          question: "Que influencia ten o relevo na distribución das vertentes hidrográficas?",
+          answers: ["Ningunha", "Facilita que todos os ríos vaian ao Atlántico", "As montañas actúan como barreiras naturais que determinan a dirección dos ríos", "Só inflúe na cantidade de auga"],
+          correct: 2,
+          explanation: "✅ O relevo, especialmente as montañas, marca a dirección dos ríos e, por tanto, das vertentes hidrográficas."
+      },
+      {
+          question: "Que factores determinan a formación das vertentes hidrográficas?",
+          answers: ["Só a choiva", "O relevo, o clima e a disposición das montañas", "A actividade volcánica", "O tipo de vexetación"],
+          correct: 1,
+          explanation: "✅ O relevo, o clima e a disposición das montañas determinan a formación das vertentes."
+      },
+      {
+          question: "Como inflúe o clima na cantidade de auga dos ríos de cada vertente?",
+          answers: ["Non inflúe", "Inflúe só na vertente atlántica", "Cada vertente depende das precipitacións e humidade da zona", "O clima só afecta os lagos"],
+          correct: 2,
+          explanation: "✅ O clima condiciona o caudal: na atlántica é abundante, na cantábrica constante, e na mediterránea irregular."
+      },
+      {
+          question: "Que características diferenciais ten o río Ebro dentro da vertente mediterránea?",
+          answers: ["É moi seco e curto", "Non desemboca no mar", "É o máis longo e caudaloso da vertente mediterránea", "Forma unha illa grande"],
+          correct: 2,
+          explanation: "✅ O Ebro é o río máis longo e caudaloso da vertente mediterránea e é fundamental para o regadío."
+      },
+      {
+          question: "Por que os ríos da vertente cantábrica son curtos e de forte pendente?",
+          answers: ["Pola escaseza de choiva", "Porque nacen no sur", "Pola proximidade das montañas á costa", "Porque cruzan desertos"],
+          correct: 2,
+          explanation: "✅ A proximidade das montañas á costa fai que os ríos da vertente cantábrica sexan curtos e con forte pendente."
+      },
+      {
+          question: "Que impacto teñen as vertentes hidrográficas na biodiversidade de España?",
+          answers: ["Ningún", "Reducen a variedade de especies", "Crean ecosistemas diversos, desde humidais ata zonas áridas", "Só afectan os peixes"],
+          correct: 2,
+          explanation: "✅ As vertentes hidrográficas contribúen á diversidade ecolóxica ao formar ecosistemas distintos."
+      },
+      {
+          question: "Como inflúe a acción humana nos ríos das distintas vertentes?",
+          answers: ["Mellora a calidade da auga", "Non ten efectos significativos", "Afecta o caudal e a calidade pola construción de encoros, contaminación e sobreexplotación", "Fai que desaparezan os ríos"],
+          correct: 2,
+          explanation: "✅ A acción humana, como os encoros e a contaminación, afecta negativamente os ríos das tres vertentes."
+      }           
+    ];
+
+    function startQuiz() {
+      document.getElementById("start-slide").classList.remove("active");
+      document.getElementById("quiz-slide").classList.add("active");
+      showQuestion();
+    }
+
+    function showQuestion() {
+      const q = questions[currentQuestion];
+      document.getElementById("question-text").innerHTML = q.question;
+      document.getElementById("question-counter").innerText = `Pregunta ${currentQuestion + 1} de ${questions.length}`;
+      const container = document.getElementById("answers-container");
+      const feedback = document.getElementById("feedback");
+
+      feedback.innerText = "";
+      feedback.className = "feedback";
+      container.innerHTML = "";
+
+      // Track selected answers
+      const selectedAnswers = new Set();
+
+      q.answers.forEach((answer, index) => {
+        const btn = document.createElement("button");
+        btn.innerText = answer;
+        btn.dataset.index = index;
+
+        // Toggle selection on click
+        btn.onclick = () => {
+          if (selectedAnswers.has(index)) {
+            selectedAnswers.delete(index);
+            btn.classList.remove("selected");
+          } else {
+            selectedAnswers.add(index);
+            btn.classList.add("selected");
+          }
+        };
+
+        container.appendChild(btn);
+      });
+
+      // Add Verify button
+      const verifyBtn = document.createElement("button");
+      verifyBtn.innerText = "Verificar";
+      verifyBtn.style.backgroundColor = "#28a745";
+      verifyBtn.style.marginTop = "10px";
+      verifyBtn.onclick = () => {
+        checkAnswer(Array.from(selectedAnswers));
+      };
+
+      container.appendChild(verifyBtn);
+
+      resetTimer();
+}
+
+
+function checkAnswer(selectedIndexes) {
+  clearInterval(timer);
+
+  const q = questions[currentQuestion];
+  const feedback = document.getElementById("feedback");
+  const buttons = document.querySelectorAll(".answers button");
+
+  // Disable buttons
+  buttons.forEach(btn => btn.disabled = true);
+
+  const correctAnswers = Array.isArray(q.correct) ? q.correct : [q.correct];
+
+  // Comprobar si las respuestas coinciden (independientemente del orden)
+  const isCorrect =
+    selectedIndexes.length === correctAnswers.length &&
+    selectedIndexes.every(idx => correctAnswers.includes(idx));
+
+  if (isCorrect) {
+    feedback.innerHTML = `🟢 Correcto! ${q.explanation}`;
+    feedback.className = "feedback correct";
+    correctCount++;
+  } else {
+    feedback.innerHTML = `🔴 Incorrecto. ${q.explanation}`;
+    feedback.className = "feedback incorrect";
+    incorrectCount++;
+  }
+
+  // Mostrar las respuestas correctas/incorrectas visualmente
+  buttons.forEach(btn => {
+    const index = parseInt(btn.dataset.index);
+    if (correctAnswers.includes(index)) {
+      btn.style.border = "2px solid green";
+    } else if (selectedIndexes.includes(index)) {
+      btn.style.border = "2px solid red";
+    }
+  });
+}
+
+
+    function nextQuestion() {
+      if (currentQuestion < questions.length - 1) {
+        currentQuestion++;
+        showQuestion();
+      } else {
+        endQuiz();
+      }
+    }
+
+    function prevQuestion() {
+      if (currentQuestion > 0) {
+        currentQuestion--;
+        showQuestion();
+      }
+    }
+
+    function endQuiz() {
+      document.getElementById("quiz-slide").classList.remove("active");
+      document.getElementById("end-slide").classList.add("active");
+      const endSlide = document.getElementById("end-slide");
+      const results = document.createElement("p");
+      results.innerHTML = `✅ Correctas: ${correctCount}<br>❌ Incorrectas: ${incorrectCount}`;
+      endSlide.appendChild(results);
+    }
+
+    function restartQuiz() {
+      currentQuestion = 0;
+      correctCount = 0;
+      incorrectCount = 0;
+      document.getElementById("feedback").innerText = "";
+      const endSlide = document.getElementById("end-slide");
+      const extraResults = endSlide.querySelectorAll("p:not(:first-child)");
+      extraResults.forEach(p => p.remove());
+      document.getElementById("end-slide").classList.remove("active");
+      document.getElementById("start-slide").classList.add("active");
+    }
+
+    function resetTimer() {
+      clearInterval(timer);
+      timeLeft = 25;
+      document.getElementById("timer").innerText = `Tempo restante: ${timeLeft}s`;
+      timer = setInterval(() => {
+        timeLeft--;
+        document.getElementById("timer").innerText = `Tempo restante: ${timeLeft}s`;
+        if (timeLeft <= 0) {
+          clearInterval(timer);
+          document.getElementById("feedback").innerText = "🔴 Tempo esgotado!";
+          document.getElementById("feedback").className = "feedback incorrect";
+          const buttons = document.querySelectorAll(".answers button");
+          buttons.forEach(btn => btn.disabled = true);
+          incorrectCount++;
+        }
+      }, 1000);
+    }
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="gl">
+<head>
+  <meta charset="UTF-8" />
+  <title>Cuestionario PCAP</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #eef2f7;
+      color: #333;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .slide {
+      display: none;
+      max-width: 600px;
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 10px;
+      padding: 30px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      animation: fadeIn 0.5s ease-in;
+    }
+
+    .active {
+      display: block;
+    }
+
+    h1, h2 {
+      color: #2b2b2b;
+    }
+
+    .question {
+      font-size: 18px;
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+
+    .answers button {
+      display: block;
+      margin: 10px auto;
+      padding: 12px 20px;
+      width: 90%;
+      font-size: 16px;
+      border: none;
+      border-radius: 6px;
+      background-color: #4a90e2;
+      color: white;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .answers button:hover {
+      background-color: #357ab8;
+    }
+
+    .answers button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+
+    .feedback {
+      margin-top: 15px;
+      font-weight: bold;
+    }
+
+    .correct {
+      color: green;
+    }
+
+    .incorrect {
+      color: red;
+    }
+
+    .nav-buttons {
+      margin-top: 20px;
+    }
+
+    .nav-buttons button {
+      margin: 0 10px;
+      padding: 10px 18px;
+      border: none;
+      border-radius: 6px;
+      background-color: #6c757d;
+      color: white;
+      cursor: pointer;
+    }
+
+    .nav-buttons button:hover {
+      background-color: #5a6268;
+    }
+
+    .timer {
+      font-size: 1em;
+      margin-bottom: 10px;
+      color: #444;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    code {
+      background-color: #f4f4f4;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      color: #c7254e;
+      font-size: 15px;
+    }
+
+    pre {
+      background-color: #f9f9f9;
+      padding: 10px;
+      border-left: 4px solid #4a90e2;
+      overflow-x: auto;
+      font-family: 'Courier New', monospace;
+      font-size: 15px;
+      color: #333;
+      border-radius: 6px;
+      margin: 15px 0;
+      text-align: left;
+    }
+
+    .answers button.selected {
+      background-color: #ffc107 !important;
+      color: #000;
+      border: 2px solid #ffa000;
+    }
+
+
+  </style>
+</head>
+<body>
+
+  <!-- Slide de inicio -->
+  <div class="slide active" id="start-slide">
+    <h1>Cuestionario “CCSS”</h1>
+    <p>Este cuestionario avaliará os teus coñecementos sobre CCSS UD 5 IDADE MEDIA NA PENINSULA.</p>
+    <p><em>Pulsa para comezar</em></p>
+    <button onclick="startQuiz()">Iniciar</button>
+  </div>
+
+  <!-- Slide de preguntas -->
+  <div class="slide" id="quiz-slide">
+    <div class="timer" id="timer">Tempo restante: 25s</div>
+    <div id="question-counter"></div>
+    <div class="question" id="question-text"></div>
+    <div class="answers" id="answers-container"></div>
+    <div class="feedback" id="feedback"></div>
+    <div class="nav-buttons">
+      <button onclick="prevQuestion()">Anterior</button>
+      <button onclick="nextQuestion()">Seguinte</button>
+    </div>
+  </div>
+
+  <!-- Slide final -->
+  <div class="slide" id="end-slide">
+    <h2>Remataches o cuestionario!</h2>
+    <p>Grazas por participar.</p>
+    <button onclick="restartQuiz()">Reiniciar cuestionario</button>
+  </div>
+
+  <script>
+    let correctCount = 0;
+    let incorrectCount = 0;
+    let currentQuestion = 0;
+    let timer;
+    let timeLeft = 25;
+
+    const questions = [       
+            {
+                question: "Cal foi unha das principais causas da caída do Imperio Romano?",
+                answers: ["O aumento dos inimigos externos", "A expansión territorial", "A mellora da economía", "O fortalecemento do exército"],
+                correct: 0,
+                explanation: "✅ A caída do Imperio Romano foi causada en parte polo aumento dos inimigos externos."
+            },
+            {
+                question: "Que pobos ameazaban constantemente as fronteiras do Imperio?",
+                answers: ["Os pobos xermanos e os persas", "Os gregos e os fenicios", "Os romanos e os cartaxineses", "Os celtas e os iberos"],
+                correct: 0,
+                explanation: "✅ Os pobos xermanos e os persas representaban unha ameaza constante para o Imperio Romano."
+            },
+            {
+                question: "Que consecuencia tivo a loita continua contra os pobos bárbaros?",
+                answers: ["Debilitación do Imperio Romano", "Expansión do territorio", "Fortalecemento da economía", "Unificación política"],
+                correct: 0,
+                explanation: "✅ A loita continua contra os pobos bárbaros debilitou o Imperio Romano."
+            },
+            {
+                question: "Por que había inestabilidade política no Imperio Romano?",
+                answers: ["Os militares asumían demasiado poder", "Os cidadáns tiñan moita influencia", "O comercio era demasiado forte", "A relixión era dominante"],
+                correct: 0,
+                explanation: "✅ A inestabilidade política no Imperio Romano foi causada polo excesivo poder dos militares."
+            },
+            {
+                question: "Que provocou o descontento nas provincias afastadas de Roma?",
+                answers: ["O desexo de obter todos os poderes romanos", "A abundancia de recursos", "A estabilidade política", "O crecemento económico"],
+                correct: 0,
+                explanation: "✅ O descontento nas provincias afastadas de Roma xurdiu polo desexo de obter todos os poderes romanos."
+            },
+            {
+                question: "Que diferenza económica houbo entre Oriente e Occidente?",
+                answers: ["O Imperio Romano de Oriente volveuse máis rico", "Occidente tiña máis recursos", "Oriente era máis pobre", "Ambos tiñan a mesma economía"],
+                correct: 0,
+                explanation: "✅ O Imperio Romano de Oriente volveuse máis rico en comparación con Occidente."
+            },
+            {
+                question: "Por que aumentaron os impostos na sociedade romana?",
+                answers: ["Para costear as constantes guerras", "Para mellorar a educación", "Para construír novos templos", "Para reducir a pobreza"],
+                correct: 0,
+                explanation: "✅ Os impostos aumentaron para costear as constantes guerras do Imperio Romano."
+            },
+            {
+                question: "Que efecto tivo o aumento dos impostos na poboación?",
+                answers: ["Provocou un conflito social", "Mellorou a economía", "Fortaleceu o goberno", "Aumentou a estabilidade"],
+                correct: 0,
+                explanation: "✅ O aumento dos impostos provocou un conflito social na sociedade romana."
+            },
+            {
+                question: "Que provocaron as migracións cara ás cidades?",
+                answers: ["Máis presión, fame e desigualdade", "Unha mellora na calidade de vida", "Unha expansión territorial", "Unha redución da pobreza"],
+                correct: 0,
+                explanation: "✅ As migracións cara ás cidades provocaron máis presión, fame e desigualdade."
+            },
+            {
+                question: "Que consecuencia tivo a división do Imperio Romano?",
+                answers: ["Debilitación da súa forza e caída de Occidente", "Unificación política", "Expansión territorial", "Fortalecemento económico"],
+                correct: 0,
+                explanation: "✅ A división do Imperio Romano debilitou a súa forza e levou á caída de Occidente."
+            },            
+            {
+                question: "Quen dirixiu os visigodos na conquista de Gallaecia?",
+                answers: ["Leovixildo", "Recaredo", "Ataúlfo", "Teodorico"],
+                correct: 0,
+                explanation: "✅ Leovixildo foi o rei visigodo que conquistou Gallaecia no ano 585."
+            },
+            {
+                question: "Que pobo xermánico vivía no noroeste da Península antes da chegada dos visigodos?",
+                answers: ["Os francos", "Os lombardos", "Os suevos", "Os ostrogodos"],
+                correct: 2,
+                explanation: "✅ Os suevos habitaban Gallaecia antes da chegada dos visigodos."
+            },
+            {
+                question: "Cal era a capital dos visigodos?",
+                answers: ["Barcelona", "Toledo", "Sevilla", "Mérida"],
+                correct: 1,
+                explanation: "✅ Toledo foi a capital do reino visigodo na Península Ibérica."
+            },
+            {
+                question: "Que tipo de monarquía tiñan os visigodos?",
+                answers: ["Monarquía hereditaria", "Monarquía electiva", "República", "Monarquía constitucional"],
+                correct: 1,
+                explanation: "✅ A monarquía visigoda era electiva, os nobres escolleían ao rei."
+            },
+            {
+                question: "Que lingua adoptaron os visigodos?",
+                answers: ["Gótico", "Latín", "Galego", "Castelán"],
+                correct: 1,
+                explanation: "✅ Os visigodos adoptaron o latín como lingua oficial."
+            },
+            {
+                question: "Cal era a relixión dos visigodos?",
+                answers: ["Islam", "Catolicismo", "Paganismo", "Arianismo"],
+                correct: 3,
+                explanation: "✅ Inicialmente os visigodos eran arianos, pero posteriormente adoptaron o catolicismo."
+            },
+            {
+                question: "En que grupos estaba dividida a sociedade visigoda?",
+                answers: ["Homes libres e servos", "Nobres e plebeos", "Sacerdotes e guerreiros", "Campesiños e comerciantes"],
+                correct: 0,
+                explanation: "✅ A sociedade visigoda estaba dividida en homes libres e servos."
+            },
+            {
+                question: "Que dereitos tiñan os servos?",
+                answers: ["Dereito á propiedade", "Dereito ao voto", "Non tiñan ningún dereito", "Dereito á educación"],
+                correct: 2,
+                explanation: "✅ Os servos non tiñan dereitos e estaban sometidos aos seus señores."
+            },
+            {
+                question: "En que ano invadiron os musulmáns a península Ibérica?",
+                answers: ["No ano 711", "No ano 800", "No ano 650", "No ano 900"],
+                correct: 0,
+                explanation: "✅ Os musulmáns invadiron a península Ibérica no ano 711."
+            },           
+            {
+                question: "Que aproveitaron os reinos cristiáns para avanzar na reconquista da Península?",
+                answers: ["Aproveitaron as disputas entre os reinos de Taifas", "A chegada dos francos", "A debilidade dos almorábides", "A fragmentación dos visigodos"],
+                correct: 0,
+                explanation: "✅ Os reinos cristiáns aproveitaron as disputas entre os reinos de Taifas para avanzar na reconquista."
+            },
+            {
+                question: "Quen axudou aos reinos taifas no ano 1090?",
+                answers: ["Os almorábides do norte de África", "Os francos", "Os visigodos", "Os reis cristiáns"],
+                correct: 0,
+                explanation: "✅ Os almorábides do norte de África acudiron en axuda dos reinos taifas no ano 1090."
+            },
+            {
+                question: "Que sucedeu entre os taifas e os almorábides?",
+                answers: ["Comezaron disputas e os almorábides acabaron marchando da península de novo para África", "Os almorábides conquistaron toda a península", "Os taifas derrotaron aos almorábides", "Os almorábides estableceron un califato en Córdoba"],
+                correct: 0,
+                explanation: "✅ As disputas entre os taifas e os almorábides levaron á retirada destes últimos cara a África."
+            },
+            {
+                question: "Que período comezará no século XII?",
+                answers: ["O período dos segundos reinos de taifas", "A expansión dos almorábides", "A chegada dos francos", "A caída do califato de Córdoba"],
+                correct: 0,
+                explanation: "✅ No século XII comezou o período dos segundos reinos de taifas."
+            },
+            {
+                question: "Que batalla importante ocorreu no século XIII?",
+                answers: ["A batalla das Navas de Tolosa", "A batalla de Covadonga", "A batalla de Guadalete", "A batalla de Poitiers"],
+                correct: 0,
+                explanation: "✅ A batalla das Navas de Tolosa foi un evento clave no século XIII."
+            },
+            {
+                question: "Que reino se inicia tras a batalla das Navas de Tolosa?",
+                answers: ["O reino nazarí de Granada", "O califato de Córdoba", "O reino de Toledo", "O emirato de Sevilla"],
+                correct: 0,
+                explanation: "✅ Tras a batalla das Navas de Tolosa iniciouse o reino nazarí de Granada."
+            },
+            {
+                question: "Que sucedeu o 2 de xaneiro de 1492?",
+                answers: ["Os cristiáns rematarán de reconquistar a Península coa conquista de Granada", "Os musulmáns expandíronse cara ao norte", "Os almorábides regresaron á península", "Os francos invadiron Al-Ándalus"],
+                correct: 0,
+                explanation: "✅ O 2 de xaneiro de 1492, os cristiáns completaron a reconquista coa toma de Granada."
+            },
+            {
+                question: "Onde é evidente o legado musulmán na Península?",
+                answers: ["Especialmente en Andalucía", "No norte da Península", "En Galicia", "En Cataluña"],
+                correct: 0,
+                explanation: "✅ O legado musulmán é especialmente evidente en Andalucía."
+            },
+            {
+                question: "Nomea algunhas das construcións destacadas en Andalucía.",
+                answers: ["A Alhambra, a mesquita de Córdoba, a Xiralda e o Alcázar de Sevilla", "O castelo de Santiago, a catedral de Burgos, o mosteiro de San Juan", "A torre Eiffel, o Coliseo, a Acrópole", "O palacio de Versalles, a catedral de Notre Dame, o Big Ben"],
+                correct: 0,
+                explanation: "✅ Algunhas das construcións destacadas en Andalucía son a Alhambra, a mesquita de Córdoba, a Xiralda e o Alcázar de Sevilla."
+            },
+            {
+                question: "Que orientación presentaban as mesquitas?",
+                answers: ["Presentaban unha orientación cara a Meca", "Estaban orientadas cara ao norte", "Non tiñan unha orientación específica", "Estaban aliñadas cos reinos cristiáns"],
+                correct: 0,
+                explanation: "✅ As mesquitas estaban orientadas cara a Meca."
+            },
+            {
+                question: "Que elementos básicos recolle a arte musulmá?",
+                answers: ["A caligrafía, os motivos vexetais, os xeométricos, os figurativos e a simetría", "A escultura en mármore, os frescos, os arcos semicirculares", "A pintura ao óleo, os mosaicos romanos, as vidreiras góticas", "Os relevos en pedra, os capiteis corintios, os frisos clásicos"],
+                correct: 0,
+                explanation: "✅ A arte musulmá recolle elementos como a caligrafía, os motivos vexetais, os xeométricos, os figurativos e a simetría."
+            },        
+            {
+                question: "Que batalla ocorreu no ano 722?",
+                answers: ["A batalla de Covadonga", "A batalla de Guadalete", "A batalla das Navas de Tolosa", "A batalla de Poitiers"],
+                correct: 0,
+                explanation: "✅ A batalla de Covadonga ocorreu no ano 722 e marcou o inicio da Reconquista."
+            },
+            {
+                question: "Quen se enfrontou aos musulmáns na batalla de Covadonga?",
+                answers: ["Don Pelayo", "Alfonso VI", "Rodrigo Díaz de Vivar", "Fernando III"],
+                correct: 0,
+                explanation: "✅ Don Pelayo liderou a resistencia cristiá contra os musulmáns na batalla de Covadonga."
+            },
+            {
+                question: "Que parte da Península non será conquistada polos árabes?",
+                answers: ["O norte da Península", "O sur da Península", "A zona central", "As illas Baleares"],
+                correct: 0,
+                explanation: "✅ O norte da Península permaneceu fóra do control musulmán tras a invasión."
+            },
+            {
+                question: "Que se creará a partir da batalla de Covadonga?",
+                answers: ["Diferentes reinos cristiáns cun único propósito de expulsar aos musulmáns", "Un novo califato musulmán", "Unha alianza entre cristiáns e musulmáns", "Unha república independente"],
+                correct: 0,
+                explanation: "✅ A batalla de Covadonga deu lugar á formación de reinos cristiáns dedicados á expulsión dos musulmáns."
+            },
+            
+            {
+                question: "Que grupos ou estamentos formaban a sociedade dos reinos cristiáns na Idade Media?",
+                answers: ["A nobreza e o clero, os campesiños e campesiñas, e os artesáns e artesás", "Os comerciantes, os guerreiros e os sacerdotes", "Os reis, os mercadores e os servos", "Os artistas, os campesiños e os nobres"],
+                correct: 0,
+                explanation: "✅ A sociedade medieval estaba dividida en tres grandes estamentos: a nobreza e o clero, os campesiños e campesiñas, e os artesáns e artesás."
+            },
+            {
+                question: "Que privilexios tiña a nobreza e o clero?",
+                answers: ["Tiñan multitude de privilexios", "Non tiñan privilexios", "Eran iguais aos campesiños", "Traballaban no campo"],
+                correct: 0,
+                explanation: "✅ A nobreza e o clero gozaban de numerosos privilexios na sociedade medieval."
+            },
+            {
+                question: "Que dereitos e liberdades tiñan os campesiños e campesiñas, e os artesáns e artesás?",
+                answers: ["Tiñan moi poucos dereitos e liberdades", "Tiñan moitos dereitos", "Podían elixir o seu señor feudal", "Eran propietarios das terras"],
+                correct: 0,
+                explanation: "✅ Os campesiños e artesáns tiñan moi poucos dereitos e liberdades na Idade Media."
+            },
+            {
+                question: "Como se caracterizaba a sociedade estamental?",
+                answers: ["Caracterizábase polo inmobilismo, é dicir, non se podía pasar dun estamento a outro", "Permitia a mobilidade social", "Era igualitaria", "Todos os grupos tiñan os mesmos dereitos"],
+                correct: 0,
+                explanation: "✅ A sociedade estamental medieval caracterizábase polo inmobilismo: non se podía pasar dun estamento a outro."
+            },
+                    
+            {
+                question: "Que nome recibía o territorio de Galicia na época dos romanos?",
+                answers: ["Gallaecia", "Hispania", "Lusitania", "Tarraconense"],
+                correct: 0,
+                explanation: "✅ O territorio de Galicia na época dos romanos recibía o nome de Gallaecia."
+            },
+            {
+                question: "Quen se converten nos poboadores da zona peninsular tras a decadencia do Imperio romano?",
+                answers: ["Os suevos", "Os visigodos", "Os francos", "Os celtas"],
+                correct: 0,
+                explanation: "✅ Tras a decadencia do Imperio romano, os suevos convertéronse nos poboadores da zona peninsular."
+            },
+            {
+                question: "Que dinastías se distinguen na historia do Reino de Galicia?",
+                answers: ["Dinastía astur-leonesa (910 - 1065), Dinastía de Navarra (1065 - 1072), Dinastía de Borgoña (1096 - 1126)", "Dinastía dos Habsburgo, Dinastía dos Borbóns, Dinastía dos Trastámara", "Dinastía dos Carolinxios, Dinastía dos Tudor, Dinastía dos Capetos", "Dinastía dos Otomanos, Dinastía dos Plantagenet, Dinastía dos Stuart"],
+                correct: 0,
+                explanation: "✅ As dinastías que se distinguen na historia do Reino de Galicia son a astur-leonesa, a de Navarra e a de Borgoña."
+            },
+            {
+                question: "Quen foi o primeiro rei de Galicia?",
+                answers: ["García I", "Fernando I", "Alfonso VI", "Ramiro II"],
+                correct: 0,
+                explanation: "✅ García I foi o primeiro rei de Galicia."
+            },
+            {
+                question: "Quen será o último rei da Dinastía de Borgoña?",
+                answers: ["Alfonso Raimúndez", "Sancho IV", "Pedro I", "Henrique II"],
+                correct: 0,
+                explanation: "✅ Alfonso Raimúndez foi o último rei da Dinastía de Borgoña."
+            },
+            {
+                question: "Que sucede no ano 1230 baixo o reinado de Fernando III?",
+                answers: ["Prodúcese a unificación dos reinos do norte (Galicia, León e Castela)", "Comeza a guerra dos cem anos", "Os musulmáns reconquistan Toledo", "A dinastía dos Habsburgo chega ao poder"],
+                correct: 0,
+                explanation: "✅ No ano 1230, baixo o reinado de Fernando III, prodúcese a unificación dos reinos do norte: Galicia, León e Castela."
+            },
+            {
+                question: "Que ocorre no ano 1486 cos reis católicos?",
+                answers: ["Centralizan todas as tomas de decisión en Castela, deixando así apartado o reino de Galicia que inicia unha decadencia na cultura e na lingua galega", "Comeza a expansión colonial española", "Os reis católicos son derrotados en Granada", "A dinastía dos Borbóns chega ao poder"],
+                correct: 0,
+                explanation: "✅ No ano 1486, os reis católicos centralizan o poder en Castela, o que provoca a decadencia da cultura e da lingua galega."
+            },
+            
+            {
+                question: "Que problemas afectaban á sociedade galega durante o século XV?",
+                answers: ["A peste negra, os señores e señoras feudais, e os bispos", "A expansión do comercio", "A chegada dos francos", "O fortalecemento da monarquía"],
+                correct: 0,
+                explanation: "✅ A sociedade galega do século XV estaba afectada pola peste negra, a opresión dos señores feudais e a influencia dos bispos."
+            },
+            {
+                question: "Quen eran os principais afectados pola opresión dos nobres durante a Revolta Irmandiña?",
+                answers: ["Os campesiños e campesiñas, comerciantes e artesáns e artesás", "Os nobres e bispos", "Os soldados e guerreiros", "Os monxes e sacerdotes"],
+                correct: 0,
+                explanation: "✅ Os campesiños, comerciantes e artesáns foron os principais afectados pola opresión dos nobres durante a Revolta Irmandiña."
+            },
+            {
+                question: "Que accións tomaron os irmandiños para loitar contra a opresión dos nobres?",
+                answers: ["Organizábanse en asociacións para loitar contra a opresión dos nobres e mobilizábanse para asaltar os castelos", "Solicitaron axuda ao rei", "Fuxiron cara ao norte", "Construíron novas fortalezas"],
+                correct: 0,
+                explanation: "✅ Os irmandiños organizáronse en asociacións e mobilizáronse para asaltar os castelos dos nobres."
+            },
+            {
+                question: "Que pasou cos irmandiños despois das durísimas batallas?",
+                answers: ["Foron derrotados e xulgados", "Conseguiron a independencia", "Foron apoiados pola monarquía", "Estableceron un novo reino"],
+                correct: 0,
+                explanation: "✅ Despois das duras batallas, os irmandiños foron derrotados e xulgados polos nobres."
+            },        
+            {
+                question: "Que período abarca a arquitectura románica na península Ibérica?",
+                answers: ["Desde o século X ata o XII", "Desde o século VIII ata o X", "Desde o século XII ata o XIV", "Desde o século IX ata o XI"],
+                correct: 0,
+                explanation: "✅ A arquitectura románica na península Ibérica abrangue desde o século X ata o XII."
+            },
+            {
+                question: "Que monumento é o máis representativo da arquitectura románica na Península?",
+                answers: ["A Catedral de Santiago", "A Mesquita de Córdoba", "A Alhambra de Granada", "O Mosteiro de San Lorenzo de El Escorial"],
+                correct: 0,
+                explanation: "✅ A Catedral de Santiago é o monumento máis representativo da arquitectura románica na Península."
+            },
+            {
+                question: "Cales son as características principais da arquitectura románica?",
+                answers: ["Paredes grosas con poucas fiestras e interiores escuros, a pedra como principal material de construción, fachadas, portas e columnas decoradas con esculturas e gravados, edificios de pouca altura, e emprego do arco de medio punto para os interiores e bóvedas de canón para as cubertas", "Estruturas lixeiras con grandes vidreiras, arcos apuntados e bóvedas de crucería", "Edificios con decoración barroca, columnas salomónicas e frescos coloridos", "Construcións de madeira con elementos minimalistas e formas xeométricas"],
+                correct: 0,
+                explanation: "✅ A arquitectura románica caracterízase por paredes grosas, interiores escuros, uso da pedra e decoración escultórica."
+            },
+            {
+                question: "Que función teñen a pintura e escultura románica?",
+                answers: ["Están ao servizo da arquitectura", "Son elementos independentes da arquitectura", "Representan escenas mitolóxicas", "Serven para decorar os interiores das casas"],
+                correct: 0,
+                explanation: "✅ A pintura e escultura románica están ao servizo da arquitectura, complementando a súa función relixiosa."
+            },
+            {
+            question: "Onde xorde o estilo gótico?",
+            answers: ["En Italia", "En Francia", "En España", "En Alemaña"],
+            correct: 1,
+            explanation: "✅ O gótico xorde en Francia no século XII."
+          },
+          {
+            question: "Cales son as características dos espazos na arquitectura gótica?",
+            answers: ["Espazos reducidos e escuros", "Espazos moi luminosos", "Sen iluminación natural", "Con paredes macizas e pequenas aberturas"],
+            correct: 1,
+            explanation: "✅ A arquitectura gótica destaca por ter espazos moi luminosos."
+          },
+          {
+            question: "Que elementos destacan nas fachadas das igrexas góticas?",
+            answers: ["Grandes fiestras e rosetóns", "Paredes lisas e sen decoración", "Elementos metálicos industriais", "Pinturas abstractas"],
+            correct: 0,
+            explanation: "✅ As fachadas das igrexas góticas destacan polas grandes fiestras e rosetóns."
+          },
+          {
+            question: "Que elemento é esencial na arquitectura gótica?",
+            answers: ["A vidreira", "O arco de medio punto", "Os muros grosos", "As columnas dóricas"],
+            correct: 0,
+            explanation: "✅ A vidreira é un elemento esencial na arquitectura gótica, permitindo a entrada de luz e creando efectos cromáticos."
+          },
+          {
+            question: "Que tipo de arcos se usan na arquitectura gótica?",
+            answers: ["Arcos semicirculares", "Arcos de medio punto", "Arcos apuntados", "Arcos rectangulares"],
+            correct: 2,
+            explanation: "✅ Os arcos apuntados eran unha característica esencial da arquitectura gótica."
+          },
+          {
+            question: "Como son as fachadas na arquitectura gótica?",
+            answers: ["Fachadas moi decoradas mediante esculturas", "Fachadas lisas e sen decoración", "Fachadas con elementos metálicos industriais", "Fachadas con pinturas abstractas"],
+            correct: 0,
+            explanation: "✅ As fachadas góticas eran decoradas con esculturas detalladas e elementos ornamentais."
+          },
+          {
+            question: "Como son as edificacións na arquitectura gótica?",
+            answers: ["Edificacións máis altas", "Edificacións baixas e compactas", "Edificacións con estruturas de madeira", "Edificacións con muros grosos e poucas fiestras"],
+            correct: 0,
+            explanation: "✅ As edificacións góticas caracterízanse por ser máis altas e esveltas."
+          },
+          {
+            question: "Que característica ten a escultura gótica en comparación coa románica?",
+            answers: ["Ten máis expresividade no tocante aos rostros, e as figuras son máis esveltas", "É máis esquemática e ríxida", "Non ten detalles realistas", "É completamente abstracta"],
+            correct: 0,
+            explanation: "✅ A escultura gótica destaca pola súa expresividade e figuras máis esveltas en comparación coa románica."
+          },
+          {
+            question: "Como son as pinturas na arquitectura gótica en comparación coa románica?",
+            answers: ["As pinturas son máis realistas, con escenas variadas (non só relixiosas)", "As pinturas son esquemáticas e ríxidas", "As pinturas son monocromáticas", "As pinturas non teñen perspectiva"],
+            correct: 0,
+            explanation: "✅ As pinturas góticas son máis realistas e presentan escenas variadas, non só relixiosas."
+          },
+          {
+            question: "En que ano se descubriu o sarcófago do apóstolo Santiago en Compostela?",
+            answers: ["No ano 813", "No ano 900", "No ano 750", "No ano 1000"],
+            correct: 0,
+            explanation: "✅ O sarcófago do apóstolo Santiago foi descuberto en Compostela no ano 813."
+          },
+          {
+            question: "Que converteu a Santiago nun centro de peregrinación dos cristiáns e de Europa?",
+            answers: ["O descubrimento do sarcófago do apóstolo Santiago en Compostela", "A construción da catedral de León", "A chegada dos francos", "A fundación do reino de Galicia"],
+            correct: 0,
+            explanation: "✅ O descubrimento do sarcófago do apóstolo Santiago en Compostela converteu a cidade nun centro de peregrinación."
+          },
+          {
+            question: "Quen foi un dos impulsores máis notables da cidade de Santiago?",
+            answers: ["O bispo Xelmírez", "O rei Alfonso VI", "O emperador Carlomagno", "O papa Urbano II"],
+            correct: 0,
+            explanation: "✅ O bispo Xelmírez foi un dos principais impulsores da cidade de Santiago."
+          },
+          {
+            question: "Que tipo de arquitectura se pode atopar ao longo do Camiño de Santiago?",
+            answers: ["Hospitais, albergues, igrexas, catedrais, pousadas de estilos románico e gótico", "Edificios modernos e minimalistas", "Construcións de estilo renacentista", "Monumentos de estilo neoclásico"],
+            correct: 0,
+            explanation: "✅ Ao longo do Camiño de Santiago predominan as construcións románicas e góticas, como igrexas e catedrais."
+          },
+          {
+            question: "En que ano comezou a construírse a catedral de Santiago?",
+            answers: ["No ano 1075", "No ano 1200", "No ano 950", "No ano 1300"],
+            correct: 0,
+            explanation: "✅ A construción da catedral de Santiago comezou no ano 1075."
+          },
+          {
+            question: "En que ano se rematou a construción da catedral de Santiago?",
+            answers: ["No ano 1211", "No ano 1100", "No ano 1350", "No ano 1400"],
+            correct: 0,
+            explanation: "✅ A catedral de Santiago foi completada no ano 1211."
+          }            
+    ];
+
+    function startQuiz() {
+      document.getElementById("start-slide").classList.remove("active");
+      document.getElementById("quiz-slide").classList.add("active");
+      showQuestion();
+    }
+
+    function showQuestion() {
+      const q = questions[currentQuestion];
+      document.getElementById("question-text").innerHTML = q.question;
+      document.getElementById("question-counter").innerText = `Pregunta ${currentQuestion + 1} de ${questions.length}`;
+      const container = document.getElementById("answers-container");
+      const feedback = document.getElementById("feedback");
+
+      feedback.innerText = "";
+      feedback.className = "feedback";
+      container.innerHTML = "";
+
+      // Track selected answers
+      const selectedAnswers = new Set();
+
+      q.answers.forEach((answer, index) => {
+        const btn = document.createElement("button");
+        btn.innerText = answer;
+        btn.dataset.index = index;
+
+        // Toggle selection on click
+        btn.onclick = () => {
+          if (selectedAnswers.has(index)) {
+            selectedAnswers.delete(index);
+            btn.classList.remove("selected");
+          } else {
+            selectedAnswers.add(index);
+            btn.classList.add("selected");
+          }
+        };
+
+        container.appendChild(btn);
+      });
+
+      // Add Verify button
+      const verifyBtn = document.createElement("button");
+      verifyBtn.innerText = "Verificar";
+      verifyBtn.style.backgroundColor = "#28a745";
+      verifyBtn.style.marginTop = "10px";
+      verifyBtn.onclick = () => {
+        checkAnswer(Array.from(selectedAnswers));
+      };
+
+      container.appendChild(verifyBtn);
+
+      resetTimer();
+}
+
+
+function checkAnswer(selectedIndexes) {
+  clearInterval(timer);
+
+  const q = questions[currentQuestion];
+  const feedback = document.getElementById("feedback");
+  const buttons = document.querySelectorAll(".answers button");
+
+  // Disable buttons
+  buttons.forEach(btn => btn.disabled = true);
+
+  const correctAnswers = Array.isArray(q.correct) ? q.correct : [q.correct];
+
+  // Comprobar si las respuestas coinciden (independientemente del orden)
+  const isCorrect =
+    selectedIndexes.length === correctAnswers.length &&
+    selectedIndexes.every(idx => correctAnswers.includes(idx));
+
+  if (isCorrect) {
+    feedback.innerHTML = `🟢 Correcto! ${q.explanation}`;
+    feedback.className = "feedback correct";
+    correctCount++;
+  } else {
+    feedback.innerHTML = `🔴 Incorrecto. ${q.explanation}`;
+    feedback.className = "feedback incorrect";
+    incorrectCount++;
+  }
+
+  // Mostrar las respuestas correctas/incorrectas visualmente
+  buttons.forEach(btn => {
+    const index = parseInt(btn.dataset.index);
+    if (correctAnswers.includes(index)) {
+      btn.style.border = "2px solid green";
+    } else if (selectedIndexes.includes(index)) {
+      btn.style.border = "2px solid red";
+    }
+  });
+}
+
+
+    function nextQuestion() {
+      if (currentQuestion < questions.length - 1) {
+        currentQuestion++;
+        showQuestion();
+      } else {
+        endQuiz();
+      }
+    }
+
+    function prevQuestion() {
+      if (currentQuestion > 0) {
+        currentQuestion--;
+        showQuestion();
+      }
+    }
+
+    function endQuiz() {
+      document.getElementById("quiz-slide").classList.remove("active");
+      document.getElementById("end-slide").classList.add("active");
+      const endSlide = document.getElementById("end-slide");
+      const results = document.createElement("p");
+      results.innerHTML = `✅ Correctas: ${correctCount}<br>❌ Incorrectas: ${incorrectCount}`;
+      endSlide.appendChild(results);
+    }
+
+    function restartQuiz() {
+      currentQuestion = 0;
+      correctCount = 0;
+      incorrectCount = 0;
+      document.getElementById("feedback").innerText = "";
+      const endSlide = document.getElementById("end-slide");
+      const extraResults = endSlide.querySelectorAll("p:not(:first-child)");
+      extraResults.forEach(p => p.remove());
+      document.getElementById("end-slide").classList.remove("active");
+      document.getElementById("start-slide").classList.add("active");
+    }
+
+    function resetTimer() {
+      clearInterval(timer);
+      timeLeft = 25;
+      document.getElementById("timer").innerText = `Tempo restante: ${timeLeft}s`;
+      timer = setInterval(() => {
+        timeLeft--;
+        document.getElementById("timer").innerText = `Tempo restante: ${timeLeft}s`;
+        if (timeLeft <= 0) {
+          clearInterval(timer);
+          document.getElementById("feedback").innerText = "🔴 Tempo esgotado!";
+          document.getElementById("feedback").className = "feedback incorrect";
+          const buttons = document.querySelectorAll(".answers button");
+          buttons.forEach(btn => btn.disabled = true);
+          incorrectCount++;
+        }
+      }, 1000);
+    }
+  </script>
+
+</body>
+</html>
